@@ -23,6 +23,19 @@ export default function Draws() {
     finally { setSyncing(false); }
   }
 
+  async function importFile(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setMsg(null);
+    try {
+      const csv = await file.text();
+      const r = await api.importCsv(csv);
+      setMsg(`ייבוא הושלם: ${r.added} הגרלות נוספו (מתוך ${r.valid} תקינות, ${r.received} שורות). פורמט: מס׳הגרלה,תאריך,6 מספרים,חזק`);
+      reload();
+    } catch (err) { setMsg('שגיאת ייבוא: ' + err.message); }
+    finally { e.target.value = ''; }
+  }
+
   return (
     <div>
       <h1 className="page-title">הגרלות</h1>
@@ -36,6 +49,10 @@ export default function Draws() {
         </select>
         <div className="spacer" />
         <button className="btn" onClick={doSync} disabled={syncing}>{syncing ? 'מעדכן...' : '🔄 עדכון ידני'}</button>
+        <label className="btn ghost" style={{ cursor: 'pointer' }}>
+          ⬆️ ייבוא CSV
+          <input type="file" accept=".csv,.txt" style={{ display: 'none' }} onChange={importFile} />
+        </label>
         <button className="btn ghost" onClick={() => downloadCSV(data?.draws || [])}>⬇️ ייצוא CSV</button>
       </div>
 

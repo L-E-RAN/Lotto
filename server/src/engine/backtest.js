@@ -1,6 +1,13 @@
 import { buildContext, runModelFast, MODEL_NAMES } from './models.js';
 import { drawNumbers } from './stats.js';
-import { PICK } from './config.js';
+import { PICK, MAX_NUMBER } from './config.js';
+import { mean, stdDev, zTestDiff } from './statTests.js';
+
+function randomTicket() {
+  const set = new Set();
+  while (set.size < PICK) set.add(1 + Math.floor(Math.random() * MAX_NUMBER));
+  return [...set];
+}
 
 function countHits(predicted, actual) {
   const set = new Set(actual);
@@ -39,35 +46,56 @@ export function backtestModel(modelName, allDraws, opts = {}) {
   const sorted = [...allDraws].sort((a, b) => a.draw_number - b.draw_number);
   const start = Math.max(minHistory, sorted.length - maxTests);
 
-  let tests = 0, sumHits = 0, h1 = 0, h2 = 0, h3 = 0, strongHits = 0;
+  const modelHits = [], empHits = [];
+  let h1 = 0, h2 = 0, h3 = 0, strongHits = 0, empStrongHits = 0;
   for (let i = start; i < sorted.length; i++) {
     const history = sorted.slice(0, i);
     const actual = sorted[i];
+    const actualNums = drawNumbers(actual);
     const ctx = buildContext(history);
     const pred = runModelFast(modelName, ctx);
-    const hits = countHits(pred.numbers, drawNumbers(actual));
-    sumHits += hits;
+    const hits = countHits(pred.numbers, actualNums);
+    modelHits.push(hits);
     if (hits >= 1) h1++;
     if (hits >= 2) h2++;
     if (hits >= 3) h3++;
     if (pred.strong === actual.strong_number) strongHits++;
-    tests++;
+    // baseline אמפירי: טור אקראי אמיתי על אותה הגרלה
+    empHits.push(countHits(randomTicket(), actualNums));
+    if ((1 + Math.floor(Math.random() * 7)) === actual.strong_number) empStrongHits++;
   }
-  const base = randomBaseline();
-  const avg = tests ? sumHits / tests : 0;
+  const tests = modelHits.length;
+  const avg = mean(modelHits), sd = stdDev(modelHits);
+  const empAvg = mean(empHits), empSd = stdDev(empHits);
+  const theo = randomBaseline();
+  const sig = zTestDiff(avg, sd, tests, empAvg, empSd, tests);
+  const r3 = (x) => Math.round(x * 1000) / 1000;
+  const pct = (x) => Math.round((x / tests) * 1000) / 10;
+
   return {
     model_name: modelName,
     test_from_draw: sorted[start]?.draw_number ?? null,
     test_to_draw: sorted[sorted.length - 1]?.draw_number ?? null,
     tests,
-    avg_hits: Math.round(avg * 1000) / 1000,
-    hit_1_plus: tests ? Math.round((h1 / tests) * 1000) / 10 : 0,
-    hit_2_plus: tests ? Math.round((h2 / tests) * 1000) / 10 : 0,
-    hit_3_plus: tests ? Math.round((h3 / tests) * 1000) / 10 : 0,
-    strong_hit_rate: tests ? Math.round((strongHits / tests) * 1000) / 10 : 0,
-    random_avg_hits: base.avg,
-    random_baseline: base,
-    improvement_vs_random: Math.round((avg - base.avg) * 1000) / 1000,
+    avg_hits: r3(avg),
+    std_hits: r3(sd),
+    hit_1_plus: pct(h1),
+    hit_2_plus: pct(h2),
+    hit_3_plus: pct(h3),
+    strong_hit_rate: pct(strongHits),
+    random_avg_hits: r3(empAvg),
+    random_std_hits: r3(empSd),
+    random_strong_rate: pct(empStrongHits),
+    random_theoretical: theo,
+    improvement_vs_random: r3(avg - empAvg),
+    z_score: sig.z,
+    p_value: sig.pValue,
+    significant: sig.significant,
+    verdict: sig.significant
+      ? (avg > empAvg
+        ? 'המודל עולה על אקראי באופן מובהק (p<0.05) בטווח הנבדק.'
+        : 'המודל נחות מאקראי באופן מובהק (p<0.05) בטווח הנבדק.')
+      : 'אין הבדל מובהק בין המודל לבחירה אקראית (p≥0.05). זו תוצאה צפויה — תוצאות לוטו אקראיות.',
   };
 }
 

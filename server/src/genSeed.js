@@ -18,10 +18,9 @@ function weightedDraw(weights, k, max) {
 }
 
 function generate(count = 1500) {
+  // אחיד מלא — כמו הגרלה הוגנת. ללא הטיה מלאכותית (ליושרה סטטיסטית).
   const weights = new Array(38).fill(1);
-  for (let i = 1; i <= 37; i++) weights[i] = 0.85 + Math.random() * 0.3;
   const sw = new Array(8).fill(1);
-  for (let i = 1; i <= 7; i++) sw[i] = 0.85 + Math.random() * 0.3;
 
   const draws = [];
   const start = new Date();

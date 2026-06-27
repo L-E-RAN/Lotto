@@ -5,6 +5,9 @@ import {
 } from '../engine/stats.js';
 import { buildContext } from '../engine/models.js';
 import { backtestModel, backtestAll } from '../engine/backtest.js';
+import { chiSquareUniform } from '../engine/statTests.js';
+import { generateTickets, costAndOdds } from '../engine/wheel.js';
+import { insertManyDraws } from '../store.js';
 import {
   generateNextPredictions, refreshModelPerformance, getModelPerformance, syncDraws, MODEL_NAMES,
 } from '../service.js';
@@ -117,6 +120,64 @@ router.post('/stats/analyze', wrap((req, res) => {
   res.json({ numbers: nums.sort((a, b) => a - b), pattern: patternOf(nums) });
 }));
 
+// מבחני אקראיות — Chi-square על התפלגות המספרים והמספר החזק
+router.get('/stats/randomness', wrap((req, res) => {
+  const draws = getAllDraws();
+  const ns = numberStats(draws);
+  const numberCounts = ns.map((s) => s.count);
+  const totalNumberObs = numberCounts.reduce((a, b) => a + b, 0); // = 6*N
+  const ss = strongStats(draws);
+  const strongCounts = ss.list.map((s) => s.count);
+  const totalStrongObs = strongCounts.reduce((a, b) => a + b, 0); // = N
+  res.json({
+    total: draws.length,
+    numbers: chiSquareUniform(numberCounts, totalNumberObs),
+    strong: chiSquareUniform(strongCounts, totalStrongObs),
+    note: 'מבחן טיב-התאמה לאחידות. p≥0.05 = אין עדות סטטיסטית להטיה; חם/קר הם תנודות אקראיות צפויות.',
+  });
+}));
+
+// ---------- TOOLS: מחולל טורים ----------
+router.post('/tools/wheel', wrap((req, res) => {
+  const draws = getAllDraws();
+  const ctx = buildContext(draws);
+  const count = Number(req.body?.count) || 6;
+  const pool = Array.isArray(req.body?.pool) ? req.body.pool.map(Number) : null;
+  const gen = generateTickets(ctx, { count, pool });
+  res.json({ ...gen, economics: costAndOdds(gen.tickets.length), disclaimer: DISCLAIMER });
+}));
+
+// ---------- ייבוא נתונים אמיתיים (CSV/מערך) ----------
+router.post('/draws/import', wrap((req, res) => {
+  let records = [];
+  if (Array.isArray(req.body?.draws)) {
+    records = req.body.draws;
+  } else if (typeof req.body?.csv === 'string') {
+    records = parseImportCsv(req.body.csv);
+  } else {
+    return res.status(400).json({ error: 'שלח csv (טקסט) או draws (מערך)' });
+  }
+  const valid = records.filter((r) =>
+    Number.isInteger(r.draw_number) && Array.isArray(r.numbers) && r.numbers.length === 6 &&
+    r.numbers.every((n) => n >= 1 && n <= 37) && r.strong_number >= 1 && r.strong_number <= 7);
+  const added = insertManyDraws(valid.map((r) => ({ ...r, source: r.source || 'import' })));
+  res.json({ received: records.length, valid: valid.length, added });
+}));
+
+function parseImportCsv(text) {
+  const out = [];
+  for (const line of text.split(/\r?\n/)) {
+    const c = line.split(/[,\t;]/).map((x) => x.trim());
+    const dn = parseInt(c[0], 10);
+    if (!Number.isInteger(dn)) continue;
+    const nums = c.slice(2, 8).map((x) => parseInt(x, 10));
+    const strong = parseInt(c[8], 10);
+    if (nums.some((n) => !Number.isInteger(n))) continue;
+    out.push({ draw_number: dn, draw_date: c[1] || null, numbers: nums, strong_number: strong });
+  }
+  return out;
+}
+
 // ---------- PREDICTIONS ----------
 router.get('/predictions/next', wrap((req, res) => {
   let preds = getLatestPredictions();
@@ -140,6 +201,9 @@ router.get('/predictions/next', wrap((req, res) => {
       perNumber: meta.perNumber || [],
       pattern: meta.pattern || null,
       performance: mp || null,
+      backtestAvg: mp?.avg_hits ?? null,
+      significant: mp?.significant ?? null,
+      verdict: mp?.verdict ?? null,
       target_draw_number: p.target_draw_number,
     };
   });

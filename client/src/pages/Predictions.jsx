@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { api } from '../lib/api.js';
-import { Balls, Loading, ErrorBox, Disclaimer, useApi } from '../components/UI.jsx';
+import { Balls, Loading, ErrorBox, Disclaimer, SignificanceNote, useApi } from '../components/UI.jsx';
 import { modelHe } from './Dashboard.jsx';
 
 export default function Predictions() {
@@ -45,8 +45,12 @@ function PredCard({ p, kind }) {
       <div className="label">{p.label} · מודל {modelHe(p.model_name)}</div>
       <Balls numbers={p.numbers} strong={p.strong} />
       <div className="row" style={{ marginTop: 12, justifyContent: 'space-between' }}>
-        <span className="tag">ציון מודל: {p.score}</span>
+        {p.backtestAvg != null
+          ? <span className="tag">ממוצע פגיעות (Backtest): {p.backtestAvg}</span>
+          : <span className="tag">ציון פנימי לדירוג: {p.score}</span>}
         {p.pattern && <span className="tag">סכום: {p.pattern.sum}</span>}
+        <button className="btn ghost" style={{ padding: '4px 10px', fontSize: 12 }}
+          onClick={() => copyTicket(p)}>📋 העתק</button>
       </div>
 
       <h3 style={{ marginTop: 18, fontSize: 14 }}>נימוק לכל מספר</h3>
@@ -71,11 +75,18 @@ function PredCard({ p, kind }) {
         </div>
       ) : <span className="muted hint">ביצועים מתחשבים ברקע — רעננו בעוד רגע.</span>}
 
+      <SignificanceNote significant={p.significant} verdict={p.verdict} />
+
       <div className="disclaimer" style={{ marginTop: 14, fontSize: 12 }}>
         ⚠️ אין הבטחת זכייה. נתוני עבר אינם מנבאים תוצאות עתידיות.
       </div>
     </div>
   );
+}
+
+function copyTicket(p) {
+  const txt = `${p.label}: ${p.numbers.join(', ')} | חזק: ${p.strong}`;
+  navigator.clipboard?.writeText(txt);
 }
 
 function Kpi({ v, l, sub }) {

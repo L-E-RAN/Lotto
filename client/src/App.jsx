@@ -8,6 +8,9 @@ import Pairs from './pages/Pairs.jsx';
 import Patterns from './pages/Patterns.jsx';
 import Predictions from './pages/Predictions.jsx';
 import Backtest from './pages/Backtest.jsx';
+import Tools from './pages/Tools.jsx';
+import Randomness from './pages/Randomness.jsx';
+import { useTheme } from './components/UI.jsx';
 
 const NAV = [
   { to: '/', label: 'דשבורד', icon: '📊', end: true },
@@ -17,11 +20,14 @@ const NAV = [
   { to: '/pairs', label: 'זוגות ושלשות', icon: '🔗' },
   { to: '/patterns', label: 'תבניות', icon: '🧩' },
   { to: '/predictions', label: 'תחזית הבאה', icon: '🔮' },
+  { to: '/tools', label: 'מחולל טורים', icon: '🎟️' },
   { to: '/backtest', label: 'Backtesting', icon: '🧪' },
+  { to: '/randomness', label: 'מבחני אקראיות', icon: '🔬' },
 ];
 
 export default function App() {
   const [open, setOpen] = useState(false);
+  const [theme, setTheme] = useTheme();
   return (
     <div className="layout">
       <div className="topbar">
@@ -40,6 +46,9 @@ export default function App() {
             </NavLink>
           ))}
         </nav>
+        <button className="btn ghost theme-toggle" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
+          {theme === 'dark' ? '☀️ מצב בהיר' : '🌙 מצב כהה'}
+        </button>
       </aside>
       <main className="content">
         <Routes>
@@ -50,7 +59,9 @@ export default function App() {
           <Route path="/pairs" element={<Pairs />} />
           <Route path="/patterns" element={<Patterns />} />
           <Route path="/predictions" element={<Predictions />} />
+          <Route path="/tools" element={<Tools />} />
           <Route path="/backtest" element={<Backtest />} />
+          <Route path="/randomness" element={<Randomness />} />
         </Routes>
       </main>
     </div>

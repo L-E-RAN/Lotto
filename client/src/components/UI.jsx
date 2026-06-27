@@ -53,6 +53,25 @@ export function Trend({ trend }) {
   return <span className={`badge ${cls}`}>{arrow} {trend}</span>;
 }
 
+// הערת מובהקות — מציגה ביושר אם המודל עולה על אקראי
+export function SignificanceNote({ significant, verdict }) {
+  if (verdict == null) return null;
+  return (
+    <div className={`disclaimer ${significant ? '' : 'neutral'}`} style={{ marginTop: 12, fontSize: 12 }}>
+      {significant ? '📊' : '🎲'} <span>{verdict}</span>
+    </div>
+  );
+}
+
+export function useTheme() {
+  const [theme, setTheme] = React.useState(() => localStorage.getItem('lotto-theme') || 'dark');
+  React.useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('lotto-theme', theme);
+  }, [theme]);
+  return [theme, setTheme];
+}
+
 export function useApi(fn, deps = []) {
   const [data, setData] = React.useState(null);
   const [error, setError] = React.useState(null);

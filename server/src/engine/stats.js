@@ -1,4 +1,5 @@
 import { MAX_NUMBER, STRONG_MAX, decadeOf, isEven, isLow } from './config.js';
+import { wilsonInterval } from './statTests.js';
 
 export function drawNumbers(d) {
   return [d.n1, d.n2, d.n3, d.n4, d.n5, d.n6];
@@ -41,11 +42,15 @@ export function numberStats(draws) {
     const overdueScore = Math.min(drawsSince, 60) / 60 * 30;
     const trendScore = trend === 'עולה' ? 10 : trend === 'יורד' ? -5 : 0;
     const score = Math.round((freqScore + overdueScore + trendScore) * 10) / 10;
+    const ci = wilsonInterval(counts[n], total); // רווח סמך 95% לפרופורציה
 
     result.push({
       number: n,
       count: counts[n],
       pct: Math.round(pct * 100) / 100,
+      ciLow: ci.low,
+      ciHigh: ci.high,
+      ciMargin: ci.margin,
       lastDate: lastSeenDate[n],
       drawsSince,
       last10: windows[10][n],

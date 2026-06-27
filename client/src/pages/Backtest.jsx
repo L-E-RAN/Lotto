@@ -65,23 +65,31 @@ export default function Backtest() {
             </ResponsiveContainer>
           </Card>
 
+          <div className={`disclaimer ${results.some((r) => r.significant && r.improvement_vs_random > 0) ? '' : 'neutral'} section-gap`}>
+            🎲 <span>
+              {results.some((r) => r.significant && r.improvement_vs_random > 0)
+                ? 'חלק מהמודלים הראו יתרון מובהק בטווח הנבדק — ייתכן שזו תוצאה אקראית (overfitting). אין לכך תוקף מנבא.'
+                : 'אף מודל אינו עולה על בחירה אקראית באופן מובהק (p≥0.05). זו התוצאה הצפויה — תוצאות לוטו אקראיות ואינן ניתנות לניבוי.'}
+            </span>
+          </div>
+
           <div className="section-gap">
             <Card title="טבלת תוצאות מפורטת">
               <div className="table-wrap">
                 <table>
                   <thead>
                     <tr>
-                      <th>מודל</th><th>טווח בדיקה</th><th>בדיקות</th><th>ממוצע פגיעות</th>
-                      <th>1+</th><th>2+</th><th>3+</th><th>חזק</th><th>אקראי (ממוצע)</th><th>שיפור</th>
+                      <th>מודל</th><th>בדיקות</th><th>ממוצע פגיעות</th><th>סטיית תקן</th>
+                      <th>1+</th><th>2+</th><th>3+</th><th>חזק</th><th>אקראי אמפירי</th><th>שיפור</th><th>p-value</th><th>מובהק?</th>
                     </tr>
                   </thead>
                   <tbody>
                     {results.map((r) => (
                       <tr key={r.model_name}>
                         <td><b>{modelHe(r.model_name)}</b></td>
-                        <td className="muted">{r.test_from_draw}–{r.test_to_draw}</td>
                         <td>{r.tests}</td>
                         <td><b>{r.avg_hits}</b></td>
+                        <td className="muted">±{r.std_hits}</td>
                         <td>{r.hit_1_plus}%</td>
                         <td>{r.hit_2_plus}%</td>
                         <td>{r.hit_3_plus}%</td>
@@ -90,6 +98,12 @@ export default function Backtest() {
                         <td>
                           <span className={`badge ${r.improvement_vs_random >= 0 ? 'up' : 'down'}`}>
                             {r.improvement_vs_random >= 0 ? '+' : ''}{r.improvement_vs_random}
+                          </span>
+                        </td>
+                        <td className="muted">{r.p_value}</td>
+                        <td>
+                          <span className={`badge ${r.significant ? 'up' : 'flat'}`}>
+                            {r.significant ? 'מובהק' : 'לא מובהק'}
                           </span>
                         </td>
                       </tr>

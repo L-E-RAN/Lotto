@@ -69,12 +69,19 @@ export function refreshModelPerformance(opts = {}) {
       test_from_draw: r.test_from_draw,
       test_to_draw: r.test_to_draw,
       avg_hits: r.avg_hits,
+      std_hits: r.std_hits,
       hit_1_plus: r.hit_1_plus,
       hit_2_plus: r.hit_2_plus,
       hit_3_plus: r.hit_3_plus,
       strong_hit_rate: r.strong_hit_rate,
       random_avg_hits: r.random_avg_hits,
+      random_std_hits: r.random_std_hits,
+      random_strong_rate: r.random_strong_rate,
       improvement_vs_random: r.improvement_vs_random,
+      z_score: r.z_score,
+      p_value: r.p_value,
+      significant: r.significant,
+      verdict: r.verdict,
     });
   }
   return results;

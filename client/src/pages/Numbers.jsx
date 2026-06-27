@@ -4,6 +4,7 @@ import { Ball, Trend, Loading, ErrorBox, useApi } from '../components/UI.jsx';
 
 export default function Numbers() {
   const { data, error, loading } = useApi(() => api.numbers());
+  const rnd = useApi(() => api.randomness());
   const [sort, setSort] = useState('number');
   const [dir, setDir] = useState('asc');
 
@@ -35,6 +36,11 @@ export default function Numbers() {
     <div>
       <h1 className="page-title">סטטיסטיקת מספרים</h1>
       <p className="page-sub">לחיצה על כותרת ממיינת · מבוסס על {data.total} הגרלות</p>
+      {rnd.data && (
+        <div className={`disclaimer ${rnd.data.numbers.significant ? '' : 'neutral'}`} style={{ marginBottom: 16, fontSize: 13 }}>
+          {rnd.data.numbers.significant ? '⚠️' : '🔬'} <span>{rnd.data.numbers.verdict} (Chi²={rnd.data.numbers.chi2}, p={rnd.data.numbers.pValue})</span>
+        </div>
+      )}
       <div className="table-wrap">
         <table>
           <thead>
@@ -42,6 +48,7 @@ export default function Numbers() {
               {header('מספר', 'number')}
               {header('הופעות', 'count')}
               {header('אחוז', 'pct')}
+              <th>רווח סמך 95%</th>
               <th>הופעה אחרונה</th>
               {header('הגרלות מאז', 'drawsSince')}
               {header('ב-10', 'last10')}
@@ -58,6 +65,7 @@ export default function Numbers() {
                 <td><Ball n={r.number} sm /></td>
                 <td>{r.count}</td>
                 <td>{r.pct}%</td>
+                <td className="muted" style={{ direction: 'ltr', textAlign: 'right' }}>{r.ciLow}–{r.ciHigh}% <span style={{ fontSize: 11 }}>(±{r.ciMargin})</span></td>
                 <td className="muted">{r.lastDate || '—'}</td>
                 <td>{r.drawsSince}</td>
                 <td>{r.last10}</td>
