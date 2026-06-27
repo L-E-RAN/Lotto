@@ -21,7 +21,10 @@ export default function Dashboard() {
 
   return (
     <div>
-      <h1 className="page-title">דשבורד ראשי</h1>
+      <div className="between">
+        <h1 className="page-title">דשבורד ראשי</h1>
+        <span className="muted" style={{ fontSize: 13, fontWeight: 600 }}>© כל הזכויות שמורות — L-E-RAN L.T.D</span>
+      </div>
       <p className="page-sub">סקירה כללית · {s.total} הגרלות במאגר</p>
 
       <div className="grid cols-3">
