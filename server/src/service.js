@@ -93,7 +93,7 @@ export async function syncDraws() {
   let added = 0;
   if (fetched.length) added = insertManyDraws(fetched);
 
-  const result = { fetched: fetched.length, added, source: fetched.length ? 'pais.co.il' : 'none' };
+  const result = { fetched: fetched.length, added, source: fetched.length ? (fetched[0].source || 'pais') : 'none' };
 
   if (added > 0) {
     const latest = getLatestDraw();
