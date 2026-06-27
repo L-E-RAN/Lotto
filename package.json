@@ -1,0 +1,28 @@
+{
+  "name": "lottostat-ai",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "LottoStat AI - ניתוח סטטיסטי של הגרלות לוטו בישראל",
+  "engines": {
+    "node": "22.x"
+  },
+  "scripts": {
+    "install:all": "npm install && npm --prefix server install && npm --prefix client install",
+    "postinstall": "npm --prefix server install && npm --prefix client install",
+    "dev": "concurrently -n SERVER,CLIENT -c blue,magenta \"npm --prefix server run dev\" \"npm --prefix client run dev\"",
+    "start": "npm --prefix server start",
+    "seed": "npm --prefix server run seed",
+    "build": "npm --prefix client run build",
+    "build:client": "npm --prefix client install && npm --prefix client run build"
+  },
+  "dependencies": {
+    "axios": "^1.7.7",
+    "cheerio": "^1.0.0",
+    "cors": "^2.8.5",
+    "express": "^4.21.1"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}
