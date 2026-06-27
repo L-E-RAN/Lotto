@@ -10,7 +10,8 @@
     }
   },
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api" }
+    { "source": "/api/(.*)", "destination": "/api" },
+    { "source": "/((?!api/|assets/).*)", "destination": "/index.html" }
   ],
   "crons": [
     { "path": "/api/draws/sync", "schedule": "30 23 * * *" }
