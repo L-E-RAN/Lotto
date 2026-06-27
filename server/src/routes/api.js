@@ -164,18 +164,48 @@ router.post('/draws/import', wrap((req, res) => {
   res.json({ received: records.length, valid: valid.length, added });
 }));
 
+// מנתח CSV בזיהוי אוטומטי — מתאים לקובץ של מפעל הפיס ולפורמטים נפוצים אחרים.
+// כל שורה: מזהה הגרלה (מספר גדול), תאריך, ואז 6 מספרים בטווח 1..37 + מספר חזק 1..7.
 function parseImportCsv(text) {
   const out = [];
-  for (const line of text.split(/\r?\n/)) {
-    const c = line.split(/[,\t;]/).map((x) => x.trim());
-    const dn = parseInt(c[0], 10);
-    if (!Number.isInteger(dn)) continue;
-    const nums = c.slice(2, 8).map((x) => parseInt(x, 10));
-    const strong = parseInt(c[8], 10);
-    if (nums.some((n) => !Number.isInteger(n))) continue;
-    out.push({ draw_number: dn, draw_date: c[1] || null, numbers: nums, strong_number: strong });
+  for (const raw of text.split(/\r?\n/)) {
+    const line = raw.trim();
+    if (!line) continue;
+    const cells = line.split(/[,\t;]/).map((x) => x.trim());
+
+    // תאריך: התא הראשון שנראה כתאריך
+    let date = null, dateIdx = -1;
+    for (let i = 0; i < cells.length; i++) {
+      const m = cells[i].match(/^(\d{1,2})[/.\-](\d{1,2})[/.\-](\d{2,4})$/) || cells[i].match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (m) { date = normalizeImportDate(cells[i]); dateIdx = i; break; }
+    }
+
+    // מזהה הגרלה: המספר השלם הראשון (לרוב התא הראשון, מאות/אלפים)
+    const firstInt = parseInt(cells[0], 10);
+    const drawNumber = Number.isInteger(firstInt) ? firstInt : null;
+    if (!Number.isInteger(drawNumber)) continue; // שורת כותרת — דלג
+
+    // מספרים: כל השלמים שאחרי התאריך (או אחרי התא הראשון אם אין תאריך)
+    const startIdx = dateIdx >= 0 ? dateIdx + 1 : 1;
+    const ints = cells.slice(startIdx).map((x) => parseInt(x, 10)).filter((n) => Number.isInteger(n));
+    const regular = ints.filter((n) => n >= 1 && n <= 37).slice(0, 6);
+    // המספר החזק: השלם הראשון בטווח 1..7 שמופיע אחרי 6 המספרים הרגילים
+    const after = ints.slice(ints.indexOf(regular[5]) + 1);
+    const strong = (after.find((n) => n >= 1 && n <= 7)) ?? ints.slice(6).find((n) => n >= 1 && n <= 7);
+
+    if (regular.length === 6 && Number.isInteger(strong)) {
+      out.push({ draw_number: drawNumber, draw_date: date, numbers: regular, strong_number: strong });
+    }
   }
   return out;
+}
+
+function normalizeImportDate(s) {
+  const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (iso) return s;
+  const m = s.match(/^(\d{1,2})[/.\-](\d{1,2})[/.\-](\d{2,4})$/);
+  if (m) { let [, d, mo, y] = m; if (y.length === 2) y = '20' + y; return `${y}-${mo.padStart(2, '0')}-${d.padStart(2, '0')}`; }
+  return s;
 }
 
 // ---------- PREDICTIONS ----------
