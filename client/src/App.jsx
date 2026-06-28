@@ -9,6 +9,7 @@ import Patterns from './pages/Patterns.jsx';
 import Predictions from './pages/Predictions.jsx';
 import Backtest from './pages/Backtest.jsx';
 import Tools from './pages/Tools.jsx';
+import Network from './pages/Network.jsx';
 import Randomness from './pages/Randomness.jsx';
 import { useTheme } from './components/UI.jsx';
 
@@ -20,6 +21,7 @@ const NAV = [
   { to: '/pairs', label: 'זוגות ושלשות', icon: '🔗' },
   { to: '/patterns', label: 'תבניות', icon: '🧩' },
   { to: '/predictions', label: 'תחזית הבאה', icon: '🔮' },
+  { to: '/network', label: 'מפת קשרים', icon: '🕸️' },
   { to: '/tools', label: 'מחולל טורים', icon: '🎟️' },
   { to: '/backtest', label: 'Backtesting', icon: '🧪' },
   { to: '/randomness', label: 'מבחני אקראיות', icon: '🔬' },
@@ -59,6 +61,7 @@ export default function App() {
           <Route path="/pairs" element={<Pairs />} />
           <Route path="/patterns" element={<Patterns />} />
           <Route path="/predictions" element={<Predictions />} />
+          <Route path="/network" element={<Network />} />
           <Route path="/tools" element={<Tools />} />
           <Route path="/backtest" element={<Backtest />} />
           <Route path="/randomness" element={<Randomness />} />

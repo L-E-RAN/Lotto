@@ -26,6 +26,7 @@ export const api = {
   randomness: () => req('/stats/randomness'),
   analyze: (numbers) => req('/stats/analyze', { method: 'POST', body: JSON.stringify({ numbers }) }),
   wheel: (count, pool) => req('/tools/wheel', { method: 'POST', body: JSON.stringify({ count, pool }) }),
+  network: (count = 10) => req('/network?count=' + count),
   importCsv: (csv) => req('/draws/import', { method: 'POST', body: JSON.stringify({ csv }) }),
   predictionsNext: () => req('/predictions/next'),
   generate: () => req('/predictions/generate', { method: 'POST' }),

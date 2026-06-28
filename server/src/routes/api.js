@@ -7,6 +7,7 @@ import { buildContext } from '../engine/models.js';
 import { backtestModel, backtestAll } from '../engine/backtest.js';
 import { chiSquareUniform } from '../engine/statTests.js';
 import { generateTickets, costAndOdds } from '../engine/wheel.js';
+import { buildNetwork, recommendTickets } from '../engine/network.js';
 import { insertManyDraws } from '../store.js';
 import {
   generateNextPredictions, refreshModelPerformance, getModelPerformance, syncDraws, MODEL_NAMES,
@@ -134,6 +135,30 @@ router.get('/stats/randomness', wrap((req, res) => {
     numbers: chiSquareUniform(numberCounts, totalNumberObs),
     strong: chiSquareUniform(strongCounts, totalStrongObs),
     note: 'מבחן טיב-התאמה לאחידות. p≥0.05 = אין עדות סטטיסטית להטיה; חם/קר הם תנודות אקראיות צפויות.',
+  });
+}));
+
+// ---------- NETWORK: מפת קשרים + 10 צירופים מדורגים ----------
+router.get('/network', wrap((req, res) => {
+  const draws = getAllDraws();
+  const net = buildNetwork(draws);
+  const ctx = buildContext(draws);
+  const count = Math.max(1, Math.min(20, Number(req.query.count) || 10));
+  const { tickets, models } = recommendTickets(draws, net, ctx, count);
+  const latest = getLatestDraw();
+  res.json({
+    total: draws.length,
+    target_draw_number: latest ? latest.draw_number + 1 : null,
+    nodes: net.nodes,
+    layers: net.layers,
+    strongPairs: net.strongPairs,
+    strongestByLift: net.strongestByLift,
+    stats: net.stats,
+    topNumbers: net.topNumbers,
+    insights: net.insights,
+    recommendations: tickets,
+    models,
+    disclaimer: DISCLAIMER,
   });
 }));
 
