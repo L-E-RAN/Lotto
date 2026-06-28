@@ -22,12 +22,44 @@ export function buildNetwork(draws) {
     nodes.push({ number: n, freq: freq[n], degree, pct: total ? Math.round((freq[n] / total) * 1000) / 10 : 0 });
   }
 
-  // שכבות לפי מרכזיות (תדירות): ליבה=8 עליונים, גשר=12 הבאים, פריפריה=השאר
-  const byFreq = [...nodes].sort((a, b) => b.freq - a.freq || b.degree - a.degree);
-  byFreq.forEach((node, i) => {
-    node.rank = i + 1;
-    node.layer = i < 8 ? 'core' : i < 20 ? 'bridge' : 'periphery';
+  // ----- שכבות לפי מבנה הרשת (לא רק תדירות) -----
+  // lift[i][j] = קו-הופעה נצפית / צפויה — קשר אמיתי בנטרול תדירות בסיס.
+  const lift = Array.from({ length: MAX_NUMBER + 1 }, () => new Array(MAX_NUMBER + 1).fill(0));
+  for (let i = 1; i <= MAX_NUMBER; i++)
+    for (let j = i + 1; j <= MAX_NUMBER; j++) {
+      const exp = total ? (freq[i] / total) * (freq[j] / total) * total : 0;
+      const l = exp ? W[i][j] / exp : 0;
+      lift[i][j] = l; lift[j][i] = l;
+    }
+
+  // גרף הקשרים המובהקים: משקל = עודף ה-lift מעל הצפוי (רק קשרים חיוביים מובהקים)
+  const CUT = 1.05;
+  const A = Array.from({ length: MAX_NUMBER + 1 }, () => new Array(MAX_NUMBER + 1).fill(0));
+  for (let i = 1; i <= MAX_NUMBER; i++)
+    for (let j = i + 1; j <= MAX_NUMBER; j++) if (lift[i][j] >= CUT) { const w = lift[i][j] - 1; A[i][j] = w; A[j][i] = w; }
+
+  const eigen = eigenvectorCentrality(A);             // מרכזיות מבנית בגרף המובהק → ליבה
+  const between = betweenness(lift, CUT);             // מתווכים בין אשכולות → גשר
+
+  for (const node of nodes) { node.eigen = Math.round(eigen[node.number] * 1000) / 1000; node.between = Math.round(between[node.number] * 1000) / 1000; }
+
+  // ליבה = 8 בעלי המרכזיות המבנית הגבוהה ביותר
+  const byEigen = [...nodes].sort((a, b) => b.eigen - a.eigen);
+  const coreSet = new Set(byEigen.slice(0, 8).map((n) => n.number));
+  // גשר = מבין הנותרים, 12 בעלי ה-betweenness הגבוה (מחברים)
+  const rest = byEigen.filter((n) => !coreSet.has(n.number)).sort((a, b) => b.between - a.between || b.eigen - a.eigen);
+  const bridgeSet = new Set(rest.slice(0, 12).map((n) => n.number));
+
+  for (const node of nodes) node.layer = coreSet.has(node.number) ? 'core' : bridgeSet.has(node.number) ? 'bridge' : 'periphery';
+  // מיון תצוגה: ליבה לפי eigen, גשר לפי between, פריפריה לפי תדירות
+  const byFreq = [...nodes].sort((a, b) => {
+    const order = { core: 0, bridge: 1, periphery: 2 };
+    if (order[a.layer] !== order[b.layer]) return order[a.layer] - order[b.layer];
+    if (a.layer === 'core') return b.eigen - a.eigen;
+    if (a.layer === 'bridge') return b.between - a.between;
+    return b.freq - a.freq;
   });
+  byFreq.forEach((node, i) => { node.rank = i + 1; });
   const layerOf = {};
   for (const node of byFreq) layerOf[node.number] = node.layer;
 
@@ -70,7 +102,60 @@ export function buildNetwork(draws) {
 }
 
 function slim(n) {
-  return { number: n.number, freq: n.freq, pct: n.pct, layer: n.layer, rank: n.rank };
+  return { number: n.number, freq: n.freq, pct: n.pct, layer: n.layer, rank: n.rank, eigen: n.eigen, between: n.between };
+}
+
+// מרכזיות וקטור-עצמי (power iteration) על מטריצת ה-lift
+function eigenvectorCentrality(L) {
+  const n = MAX_NUMBER;
+  let x = new Array(n + 1).fill(1);
+  for (let iter = 0; iter < 200; iter++) {
+    const y = new Array(n + 1).fill(0);
+    for (let i = 1; i <= n; i++)
+      for (let j = 1; j <= n; j++) y[i] += L[i][j] * x[j];
+    const norm = Math.sqrt(y.reduce((s, v) => s + v * v, 0)) || 1;
+    for (let i = 1; i <= n; i++) y[i] /= norm;
+    let diff = 0; for (let i = 1; i <= n; i++) diff += Math.abs(y[i] - x[i]);
+    x = y;
+    if (diff < 1e-9) break;
+  }
+  // נרמול ל-0..1
+  const max = Math.max(...x.slice(1)) || 1;
+  const out = new Array(n + 1).fill(0);
+  for (let i = 1; i <= n; i++) out[i] = x[i] / max;
+  return out;
+}
+
+// betweenness centrality (Brandes) על גרף לא-משוקלל של קשרים מובהקים (lift>=cutoff)
+function betweenness(L, cutoff) {
+  const n = MAX_NUMBER;
+  const adj = Array.from({ length: n + 1 }, () => []);
+  for (let i = 1; i <= n; i++)
+    for (let j = i + 1; j <= n; j++) if (L[i][j] >= cutoff) { adj[i].push(j); adj[j].push(i); }
+  const CB = new Array(n + 1).fill(0);
+  for (let s = 1; s <= n; s++) {
+    const stack = [], pred = Array.from({ length: n + 1 }, () => []);
+    const sigma = new Array(n + 1).fill(0), dist = new Array(n + 1).fill(-1);
+    sigma[s] = 1; dist[s] = 0;
+    const q = [s];
+    while (q.length) {
+      const v = q.shift(); stack.push(v);
+      for (const w of adj[v]) {
+        if (dist[w] < 0) { dist[w] = dist[v] + 1; q.push(w); }
+        if (dist[w] === dist[v] + 1) { sigma[w] += sigma[v]; pred[w].push(v); }
+      }
+    }
+    const delta = new Array(n + 1).fill(0);
+    while (stack.length) {
+      const w = stack.pop();
+      for (const v of pred[w]) delta[v] += (sigma[v] / sigma[w]) * (1 + delta[w]);
+      if (w !== s) CB[w] += delta[w];
+    }
+  }
+  const max = Math.max(...CB.slice(1)) || 1;
+  const out = new Array(n + 1).fill(0);
+  for (let i = 1; i <= n; i++) out[i] = CB[i] / max; // 0..1
+  return out;
 }
 
 function buildInsights(byFreq, strongPairs, byLift, layerOf, W) {
