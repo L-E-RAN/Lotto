@@ -1,7 +1,7 @@
 import express from 'express';
 import { getAllDraws, getLatestDraw, getLatestPredictions } from '../store.js';
 import {
-  numberStats, strongStats, pairStats, tripleStats, sumDistribution, patternOf, drawNumbers, intervalStats,
+  numberStats, strongStats, pairStats, tripleStats, sumDistribution, patternOf, drawNumbers, intervalStats, numberPattern,
 } from '../engine/stats.js';
 import { buildContext } from '../engine/models.js';
 import { backtestModel, backtestAll } from '../engine/backtest.js';
@@ -129,6 +129,14 @@ router.get('/stats/intervals', wrap((req, res) => {
     intervals: intervalStats(draws),
     note: 'מרווח ממוצע = כל כמה הגרלות המספר יוצא. CV נמוך = מרווח קבוע יותר. במשחק הוגן המרווחים גאומטריים (שונות גבוהה) — "סדירות" אמיתית אינה צפויה.',
   });
+}));
+
+// פרופיל תבניות למספר יחיד
+router.get('/stats/number/:n', wrap((req, res) => {
+  const n = parseInt(req.params.n, 10);
+  if (!(n >= 1 && n <= 37)) return res.status(400).json({ error: 'מספר חייב להיות 1–37' });
+  const draws = getAllDraws();
+  res.json({ total: draws.length, profile: numberPattern(draws, n) });
 }));
 
 // מבחני אקראיות — Chi-square על התפלגות המספרים והמספר החזק

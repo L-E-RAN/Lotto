@@ -207,6 +207,89 @@ export function intervalStats(draws) {
   return out;
 }
 
+// פרופיל תבניות מלא למספר יחיד
+export function numberPattern(draws, n) {
+  const total = draws.length;
+  const has = (d) => drawNumbers(d).includes(n);
+  const pos = [];
+  draws.forEach((d, i) => { if (has(d)) pos.push(i); });
+  const count = pos.length;
+
+  // מרווחים + היסטוגרמה
+  const gaps = [];
+  for (let k = 1; k < pos.length; k++) gaps.push(pos[k] - pos[k - 1]);
+  const gapHist = {};
+  for (const g of gaps) gapHist[g] = (gapHist[g] || 0) + 1;
+  const histogram = Object.entries(gapHist).map(([g, c]) => ({ gap: +g, count: c })).sort((a, b) => a.gap - b.gap);
+  const avgGap = gaps.length ? gaps.reduce((s, g) => s + g, 0) / gaps.length : total;
+  const sortedG = [...gaps].sort((a, b) => a - b);
+  const medianGap = sortedG.length ? sortedG[Math.floor(sortedG.length / 2)] : 0;
+  const modeGap = histogram.length ? histogram.reduce((a, b) => (b.count > a.count ? b : a)).gap : 0;
+  const currentGap = pos.length ? total - 1 - pos[pos.length - 1] : total;
+
+  // רצפים (הופעה בהגרלות עוקבות) + בצורת הכי ארוכה
+  let maxStreak = 0, cur = 0, backToBack = 0;
+  draws.forEach((d) => { if (has(d)) { cur++; if (cur >= 2) backToBack++; maxStreak = Math.max(maxStreak, cur); } else cur = 0; });
+  const maxDrought = gaps.length ? Math.max(...gaps) : total;
+
+  // נטייה לפי יום בשבוע
+  const dayNames = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
+  const dayTotal = new Array(7).fill(0), dayHit = new Array(7).fill(0);
+  for (const d of draws) {
+    const wd = new Date(d.draw_date + 'T00:00:00').getDay();
+    if (Number.isNaN(wd)) continue;
+    dayTotal[wd]++; if (has(d)) dayHit[wd]++;
+  }
+  const baseRate = count / total || 0;
+  const weekday = dayNames.map((name, i) => ({
+    day: name, draws: dayTotal[i], hits: dayHit[i],
+    rate: dayTotal[i] ? Math.round((dayHit[i] / dayTotal[i]) * 1000) / 10 : 0,
+    vsBase: dayTotal[i] ? Math.round(((dayHit[i] / dayTotal[i]) / baseRate) * 100) / 100 : 0,
+  })).filter((x) => x.draws > 0);
+
+  // שותפים (קו-הופעה) עם lift
+  const freq = new Array(MAX_NUMBER + 1).fill(0);
+  const co = new Array(MAX_NUMBER + 1).fill(0);
+  for (const d of draws) {
+    const nums = drawNumbers(d);
+    for (const x of nums) freq[x]++;
+    if (nums.includes(n)) for (const x of nums) if (x !== n) co[x]++;
+  }
+  const companions = [];
+  for (let x = 1; x <= MAX_NUMBER; x++) {
+    if (x === n || !co[x]) continue;
+    const expected = total ? (freq[n] / total) * (freq[x] / total) * total : 0;
+    companions.push({ number: x, count: co[x], lift: expected ? Math.round((co[x] / expected) * 100) / 100 : 0 });
+  }
+  companions.sort((a, b) => b.count - a.count);
+
+  // "יד חמה": הסתברות להופיע בהגרלה הבאה בהינתן שהופיע כעת, מול קצב הבסיס
+  let follow = 0, opportunities = 0;
+  for (let i = 0; i < draws.length - 1; i++) if (has(draws[i])) { opportunities++; if (has(draws[i + 1])) follow++; }
+  const followRate = opportunities ? follow / opportunities : 0;
+
+  // מגמה אחרונה
+  const rate = (w) => { const s = draws.slice(-w); return s.length ? Math.round((s.filter(has).length / s.length) * 1000) / 10 : 0; };
+
+  return {
+    number: n,
+    count,
+    pct: total ? Math.round((count / total) * 1000) / 10 : 0,
+    avgGap: Math.round(avgGap * 100) / 100,
+    medianGap, modeGap, currentGap,
+    maxStreak, backToBack, maxDrought,
+    histogram,
+    weekday,
+    companions: companions.slice(0, 8),
+    hotHand: {
+      followRate: Math.round(followRate * 1000) / 10,
+      baseRate: Math.round(baseRate * 1000) / 10,
+      lift: baseRate ? Math.round((followRate / baseRate) * 100) / 100 : 0,
+    },
+    recent: { last25: rate(25), last50: rate(50), last100: rate(100), lifetime: Math.round(baseRate * 1000) / 10 },
+  };
+}
+
 export function sumDistribution(draws) {
   const sums = draws.map((d) => drawNumbers(d).reduce((s, n) => s + n, 0));
   sums.sort((a, b) => a - b);
