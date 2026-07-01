@@ -150,11 +150,11 @@ tbody tr:hover { background: rgba(108,140,255,.06); }
 
 /* ---- טבלת חזרתיות מספרים ---- */
 .grid-wrap { max-height: 72vh; overflow: auto; border: 1px solid var(--border); border-radius: 12px; }
-table.recur { border-collapse: separate; border-spacing: 0; font-size: 12px; }
+table.recur { border-collapse: separate; border-spacing: 0; font-size: 12px; width: 100%; }
 table.recur th, table.recur td { border-bottom: 1px solid var(--border); border-left: 1px solid var(--border); text-align: center; }
-table.recur .numh { width: 26px; min-width: 26px; padding: 6px 0; color: var(--muted); font-weight: 700; position: sticky; top: 0; background: var(--bg-2); z-index: 3; }
+table.recur .numh { min-width: 26px; padding: 6px 0; color: var(--muted); font-weight: 700; position: sticky; top: 0; background: var(--bg-2); z-index: 3; }
 table.recur thead th.stick-c, table.recur thead th.stick-c2 { position: sticky; top: 0; z-index: 5; background: var(--bg-2); }
-table.recur .gc { width: 26px; min-width: 26px; height: 26px; padding: 0; color: transparent; }
+table.recur .gc { min-width: 26px; height: 28px; padding: 0; color: transparent; }
 table.recur .gc.on { background: linear-gradient(160deg, #34407a, #222d57); color: #fff; font-weight: 800; }
 table.recur .gc.on.strong { background: linear-gradient(160deg, #ffcb47, #e09b1a); color: #2a2000; box-shadow: inset 0 0 0 2px #fff3c4; }
 table.recur .gc.strong:not(.on) { box-shadow: inset 0 0 0 2px rgba(255,203,71,.6); border-radius: 4px; }
