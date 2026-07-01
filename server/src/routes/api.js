@@ -10,7 +10,7 @@ import { generateTickets, costAndOdds } from '../engine/wheel.js';
 import { buildNetwork, recommendTickets } from '../engine/network.js';
 import { insertManyDraws } from '../store.js';
 import {
-  generateNextPredictions, refreshModelPerformance, getModelPerformance, syncDraws, MODEL_NAMES,
+  generateNextPredictions, refreshModelPerformance, getModelPerformance, syncDraws, autoSync, MODEL_NAMES,
 } from '../service.js';
 import { DISCLAIMER } from '../engine/config.js';
 
@@ -50,6 +50,11 @@ const syncHandler = wrap(async (req, res) => {
 });
 router.post('/draws/sync', syncHandler);
 router.get('/draws/sync', syncHandler); // alias ל-Vercel Cron (GET)
+
+// סנכרון אוטומטי בכניסה לדף (עם throttle של 5 דק')
+router.get('/draws/auto-sync', wrap(async (req, res) => {
+  res.json(await autoSync());
+}));
 
 // ---------- STATS ----------
 router.get('/stats/numbers', wrap((req, res) => {

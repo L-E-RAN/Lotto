@@ -17,6 +17,7 @@ export const api = {
   draws: (params = {}) => req('/draws?' + new URLSearchParams(params)),
   latest: () => req('/draws/latest'),
   sync: () => req('/draws/sync', { method: 'POST' }),
+  autoSync: () => req('/draws/auto-sync'),
   numbers: () => req('/stats/numbers'),
   strong: () => req('/stats/strong'),
   pairs: (limit = 30) => req('/stats/pairs?limit=' + limit),

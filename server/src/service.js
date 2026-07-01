@@ -87,6 +87,20 @@ export function refreshModelPerformance(opts = {}) {
   return results;
 }
 
+// סנכרון אוטומטי עם throttle — נקרא בכניסה לדף ההגרלות.
+let lastAutoSync = 0;
+let lastAutoResult = null;
+const AUTO_SYNC_TTL = 5 * 60 * 1000; // 5 דקות
+export async function autoSync() {
+  const now = Date.now();
+  if (lastAutoResult && now - lastAutoSync < AUTO_SYNC_TTL) {
+    return { ...lastAutoResult, cached: true, nextSyncInSec: Math.round((AUTO_SYNC_TTL - (now - lastAutoSync)) / 1000) };
+  }
+  lastAutoSync = now;
+  lastAutoResult = await syncDraws();
+  return { ...lastAutoResult, cached: false };
+}
+
 // סנכרון מלא: משיכה -> שמירה -> בדיקת תחזיות -> ביצועים -> תחזית חדשה
 export async function syncDraws() {
   const fetched = await fetchLatestDraws();

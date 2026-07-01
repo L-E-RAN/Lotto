@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { api, downloadCSV } from '../lib/api.js';
 import { Balls, Loading, ErrorBox, useApi } from '../components/UI.jsx';
 
@@ -8,6 +8,24 @@ export default function Draws() {
   const [syncing, setSyncing] = useState(false);
   const [msg, setMsg] = useState(null);
   const { data, error, loading, reload } = useApi(() => api.draws({ year, q }), [year, q]);
+
+  // סנכרון אוטומטי בכניסה לדף — מושך נתונים עדכניים ושומר אותם (throttle בצד שרת)
+  const autoRan = useRef(false);
+  useEffect(() => {
+    if (autoRan.current) return;
+    autoRan.current = true;
+    (async () => {
+      setSyncing(true);
+      try {
+        const r = await api.autoSync();
+        if (r.added > 0) { setMsg(`עודכן אוטומטית: נוספו ${r.added} הגרלות חדשות (${r.source}).`); reload(); }
+        else if (r.cached) setMsg('הנתונים עדכניים (סונכרנו לאחרונה).');
+        else setMsg('הנתונים עדכניים — אין הגרלות חדשות.');
+      } catch { /* שקט — הטבלה עדיין נטענת מהמאגר */ }
+      finally { setSyncing(false); }
+    })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function doSync() {
     setSyncing(true); setMsg(null);
@@ -39,7 +57,9 @@ export default function Draws() {
   return (
     <div>
       <h1 className="page-title">הגרלות</h1>
-      <p className="page-sub">היסטוריית כל ההגרלות במאגר {data ? `· ${data.total} רשומות` : ''}</p>
+      <p className="page-sub">
+        מתעדכן אוטומטית בכל כניסה {data ? `· ${data.total} רשומות` : ''} {syncing && '· מסתנכרן…'}
+      </p>
 
       <div className="toolbar">
         <input placeholder="חיפוש לפי תאריך / מספר הגרלה" value={q} onChange={(e) => setQ(e.target.value)} />
