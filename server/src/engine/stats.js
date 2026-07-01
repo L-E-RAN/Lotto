@@ -165,6 +165,48 @@ export function patternOf(nums) {
   };
 }
 
+// דפוס חזרתיות לכל מספר: מרווח ממוצע בין הופעות + מדד סדירות
+export function intervalStats(draws) {
+  const total = draws.length;
+  const positions = {}; // number -> [indices]
+  for (let n = 1; n <= MAX_NUMBER; n++) positions[n] = [];
+  draws.forEach((d, i) => { for (const n of drawNumbers(d)) positions[n].push(i); });
+
+  const out = [];
+  for (let n = 1; n <= MAX_NUMBER; n++) {
+    const pos = positions[n];
+    const gaps = [];
+    for (let k = 1; k < pos.length; k++) gaps.push(pos[k] - pos[k - 1]);
+    const count = pos.length;
+    const avgGap = count > 1 ? gaps.reduce((s, g) => s + g, 0) / gaps.length : total;
+    const meanG = avgGap;
+    const variance = gaps.length ? gaps.reduce((s, g) => s + (g - meanG) ** 2, 0) / gaps.length : 0;
+    const std = Math.sqrt(variance);
+    const cv = meanG ? std / meanG : 0;                       // מקדם שונות
+    const sortedG = [...gaps].sort((a, b) => a - b);
+    const median = sortedG.length ? sortedG[Math.floor(sortedG.length / 2)] : avgGap;
+    const currentGap = pos.length ? total - 1 - pos[pos.length - 1] : total;
+    // תווית סדירות: ככל ש-CV נמוך, המרווח קבוע יותר
+    const regularity = cv < 0.55 ? 'סדיר' : cv < 0.85 ? 'בינוני' : 'אקראי';
+
+    out.push({
+      number: n,
+      count,
+      avgGap: Math.round(avgGap * 100) / 100,
+      medianGap: median,
+      stdGap: Math.round(std * 100) / 100,
+      cv: Math.round(cv * 100) / 100,
+      minGap: sortedG[0] ?? null,
+      maxGap: sortedG[sortedG.length - 1] ?? null,
+      currentGap,
+      regularity,
+      due: currentGap >= avgGap, // "מאחר" — עבר יותר מהמרווח הממוצע
+      text: `מספר ${n} יוצא בממוצע פעם ב-${(Math.round(avgGap * 10) / 10)} הגרלות`,
+    });
+  }
+  return out;
+}
+
 export function sumDistribution(draws) {
   const sums = draws.map((d) => drawNumbers(d).reduce((s, n) => s + n, 0));
   sums.sort((a, b) => a - b);

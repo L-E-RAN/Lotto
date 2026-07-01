@@ -1,7 +1,7 @@
 import express from 'express';
 import { getAllDraws, getLatestDraw, getLatestPredictions } from '../store.js';
 import {
-  numberStats, strongStats, pairStats, tripleStats, sumDistribution, patternOf, drawNumbers,
+  numberStats, strongStats, pairStats, tripleStats, sumDistribution, patternOf, drawNumbers, intervalStats,
 } from '../engine/stats.js';
 import { buildContext } from '../engine/models.js';
 import { backtestModel, backtestAll } from '../engine/backtest.js';
@@ -119,6 +119,16 @@ router.post('/stats/analyze', wrap((req, res) => {
   const nums = (req.body?.numbers || []).map(Number);
   if (nums.length !== 6) return res.status(400).json({ error: 'יש לשלוח 6 מספרים' });
   res.json({ numbers: nums.sort((a, b) => a - b), pattern: patternOf(nums) });
+}));
+
+// דפוס חזרתיות — מרווח ממוצע וסדירות לכל מספר
+router.get('/stats/intervals', wrap((req, res) => {
+  const draws = getAllDraws();
+  res.json({
+    total: draws.length,
+    intervals: intervalStats(draws),
+    note: 'מרווח ממוצע = כל כמה הגרלות המספר יוצא. CV נמוך = מרווח קבוע יותר. במשחק הוגן המרווחים גאומטריים (שונות גבוהה) — "סדירות" אמיתית אינה צפויה.',
+  });
 }));
 
 // מבחני אקראיות — Chi-square על התפלגות המספרים והמספר החזק
