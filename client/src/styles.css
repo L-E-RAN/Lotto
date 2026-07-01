@@ -55,7 +55,8 @@ a { color: inherit; text-decoration: none; }
 .nav a:hover { background: var(--card); color: var(--text); }
 .nav a.active { background: linear-gradient(90deg, rgba(108,140,255,.25), transparent); color: var(--text); box-shadow: inset 3px 0 0 var(--accent); }
 
-.content { flex: 1; padding: 26px 30px; max-width: 1400px; }
+.content { flex: 1; padding: 26px 30px; max-width: 1600px; }
+.content.full { max-width: none; }
 .page-title { font-size: 26px; font-weight: 800; margin: 0 0 4px; }
 .page-sub { color: var(--muted); margin: 0 0 22px; font-size: 14px; }
 
@@ -154,20 +155,20 @@ table.recur { border-collapse: separate; border-spacing: 0; font-size: 12px; wid
 table.recur th, table.recur td { border-bottom: 1px solid var(--border); border-left: 1px solid var(--border); text-align: center; }
 table.recur .numh { min-width: 26px; padding: 6px 0; color: var(--muted); font-weight: 700; position: sticky; top: 0; background: var(--bg-2); z-index: 3; }
 table.recur thead th.stick-c, table.recur thead th.stick-c2 { position: sticky; top: 0; z-index: 5; background: var(--bg-2); }
-table.recur .gc { min-width: 26px; height: 28px; padding: 0; color: transparent; background: #0a0f1e; }
-table.recur .gc.on { background: linear-gradient(160deg, #4ea8ff, #1f6fe0); color: #fff; font-weight: 800; text-shadow: 0 1px 2px rgba(0,0,0,.55); box-shadow: inset 0 0 0 1px #93c5ff; }
-table.recur .gc.on.strong { background: linear-gradient(160deg, #ffd24a, #f59e0b); color: #241a00; box-shadow: inset 0 0 0 2px #fff3c4; text-shadow: none; }
-table.recur .gc.strong:not(.on) { box-shadow: inset 0 0 0 2px rgba(255,203,71,.8); border-radius: 4px; }
+table.recur .gc { min-width: 26px; height: 30px; padding: 0; color: transparent; background: #0c1326; }
+table.recur .gc.on { background: linear-gradient(160deg, #34e39b, #12a86b); color: #04150d; font-weight: 900; font-size: 13px; box-shadow: inset 0 0 0 1px #7ff5c6; }
+table.recur .gc.on.strong { background: linear-gradient(160deg, #ffd24a, #f59e0b); color: #241a00; box-shadow: inset 0 0 0 2px #fff3c4; }
+table.recur .gc.strong:not(.on) { box-shadow: inset 0 0 0 2px rgba(255,203,71,.85); border-radius: 4px; }
 table.recur .stick-c { position: sticky; right: 0; background: var(--card); z-index: 2; min-width: 64px; padding: 6px 8px; font-weight: 700; }
 table.recur .stick-c2 { position: sticky; right: 64px; background: var(--card); z-index: 2; min-width: 92px; padding: 6px 8px; white-space: nowrap; }
 table.recur tbody tr:hover td { background: rgba(108,140,255,.05); }
-table.recur tbody tr:hover .gc.on { background: linear-gradient(160deg, #3d4c93, #2a376b); }
+table.recur tbody tr:hover .gc.on { background: linear-gradient(160deg, #4bf0ad, #16c07c); }
 table.recur .mono { font-variant-numeric: tabular-nums; }
 table.recur tfoot td { position: sticky; bottom: 0; background: var(--bg-2); font-weight: 800; z-index: 2; }
 table.recur tfoot .stick-c { z-index: 4; }
 .gcell { display: inline-block; width: 14px; height: 14px; border-radius: 4px; vertical-align: middle; }
-.gcell.on { background: linear-gradient(160deg, #34407a, #222d57); }
-.gcell.strong { background: linear-gradient(160deg, #ffcb47, #e09b1a); }
+.gcell.on { background: linear-gradient(160deg, #34e39b, #12a86b); }
+.gcell.strong { background: linear-gradient(160deg, #ffd24a, #f59e0b); }
 
 .topbar { display: none; }
 

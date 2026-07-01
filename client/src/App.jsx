@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Routes, Route, NavLink } from 'react-router-dom';
+import { Routes, Route, NavLink, useLocation } from 'react-router-dom';
 import Dashboard from './pages/Dashboard.jsx';
 import Draws from './pages/Draws.jsx';
 import Numbers from './pages/Numbers.jsx';
@@ -32,6 +32,8 @@ const NAV = [
 export default function App() {
   const [open, setOpen] = useState(false);
   const [theme, setTheme] = useTheme();
+  const { pathname } = useLocation();
+  const fullWidth = pathname === '/grid';
   return (
     <div className="layout">
       <div className="topbar">
@@ -54,7 +56,7 @@ export default function App() {
           {theme === 'dark' ? '☀️ מצב בהיר' : '🌙 מצב כהה'}
         </button>
       </aside>
-      <main className="content">
+      <main className={`content ${fullWidth ? 'full' : ''}`}>
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/draws" element={<Draws />} />
