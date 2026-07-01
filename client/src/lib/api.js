@@ -28,7 +28,7 @@ export const api = {
   intervals: () => req('/stats/intervals'),
   numberProfile: (n) => req('/stats/number/' + n),
   analyze: (numbers) => req('/stats/analyze', { method: 'POST', body: JSON.stringify({ numbers }) }),
-  wheel: (count, pool) => req('/tools/wheel', { method: 'POST', body: JSON.stringify({ count, pool }) }),
+  wheel: (count, pool, mode = 'insights') => req('/tools/wheel', { method: 'POST', body: JSON.stringify({ count, pool, mode }) }),
   network: (count = 10) => req('/network?count=' + count),
   importCsv: (csv) => req('/draws/import', { method: 'POST', body: JSON.stringify({ csv }) }),
   predictionsNext: () => req('/predictions/next'),

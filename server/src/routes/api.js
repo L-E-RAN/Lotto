@@ -8,11 +8,12 @@ import { backtestModel, backtestAll } from '../engine/backtest.js';
 import { chiSquareUniform } from '../engine/statTests.js';
 import { generateTickets, costAndOdds } from '../engine/wheel.js';
 import { buildNetwork, recommendTickets } from '../engine/network.js';
+import { generateInsightTickets } from '../engine/insights.js';
 import { insertManyDraws } from '../store.js';
 import {
   generateNextPredictions, refreshModelPerformance, getModelPerformance, syncDraws, autoSync, MODEL_NAMES,
 } from '../service.js';
-import { DISCLAIMER } from '../engine/config.js';
+import { DISCLAIMER, PICK } from '../engine/config.js';
 
 const router = express.Router();
 const wrap = (fn) => (req, res) => Promise.resolve(fn(req, res)).catch((e) => {
@@ -189,10 +190,16 @@ router.get('/network', wrap((req, res) => {
 router.post('/tools/wheel', wrap((req, res) => {
   const draws = getAllDraws();
   const ctx = buildContext(draws);
-  const count = Number(req.body?.count) || 6;
+  const count = Math.max(1, Math.min(20, Number(req.body?.count) || 8));
+  const mode = req.body?.mode || 'insights'; // 'insights' (ברירת מחדל) או 'coverage'
   const pool = Array.isArray(req.body?.pool) ? req.body.pool.map(Number) : null;
-  const gen = generateTickets(ctx, { count, pool });
-  res.json({ ...gen, economics: costAndOdds(gen.tickets.length), disclaimer: DISCLAIMER });
+
+  if (mode === 'coverage' || (pool && pool.length >= PICK)) {
+    const gen = generateTickets(ctx, { count, pool });
+    return res.json({ mode: 'coverage', ...gen, economics: costAndOdds(gen.tickets.length), disclaimer: DISCLAIMER });
+  }
+  const ins = generateInsightTickets(draws, ctx, count);
+  res.json({ mode: 'insights', ...ins, economics: costAndOdds(ins.tickets.length), disclaimer: DISCLAIMER });
 }));
 
 // ---------- ייבוא נתונים אמיתיים (CSV/מערך) ----------
