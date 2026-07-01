@@ -3,6 +3,7 @@ import { Routes, Route, NavLink } from 'react-router-dom';
 import Dashboard from './pages/Dashboard.jsx';
 import Draws from './pages/Draws.jsx';
 import Numbers from './pages/Numbers.jsx';
+import Grid from './pages/Grid.jsx';
 import Strong from './pages/Strong.jsx';
 import Pairs from './pages/Pairs.jsx';
 import Patterns from './pages/Patterns.jsx';
@@ -17,6 +18,7 @@ const NAV = [
   { to: '/', label: 'דשבורד', icon: '📊', end: true },
   { to: '/draws', label: 'הגרלות', icon: '🎰' },
   { to: '/numbers', label: 'סטטיסטיקת מספרים', icon: '🔢' },
+  { to: '/grid', label: 'חזרתיות מספרים', icon: '🟦' },
   { to: '/strong', label: 'מספר חזק', icon: '⭐' },
   { to: '/pairs', label: 'זוגות ושלשות', icon: '🔗' },
   { to: '/patterns', label: 'תבניות', icon: '🧩' },
@@ -57,6 +59,7 @@ export default function App() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/draws" element={<Draws />} />
           <Route path="/numbers" element={<Numbers />} />
+          <Route path="/grid" element={<Grid />} />
           <Route path="/strong" element={<Strong />} />
           <Route path="/pairs" element={<Pairs />} />
           <Route path="/patterns" element={<Patterns />} />
