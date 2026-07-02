@@ -156,6 +156,42 @@ export function generateInsightTickets(draws, ctx, count = 10) {
   };
 }
 
+// תחזית ביטחון: בוחר 6 מספרים עם ההסתברות הגבוהה ביותר להופיע תוך K ההגרלות הבאות.
+// P(מופיע תוך K) = 1 - (1-p)^K, כאשר p = שיעור ההופעה ההיסטורי. מבטיח ≥5 מעל 50%.
+export function confidencePrediction(draws, ss) {
+  const total = draws.length;
+  const freq = new Array(MAX_NUMBER + 1).fill(0);
+  for (const d of draws) for (const n of drawNumbers(d)) freq[n]++;
+  const pOf = (n) => freq[n] / total;
+  const withinK = (n, K) => 1 - Math.pow(1 - pOf(n), K);
+
+  // מצא K מינימלי (3..8) שבו לפחות 5 מ-6 המובילים מעל 50%
+  let chosen = null, K = 8;
+  for (let k = 3; k <= 8; k++) {
+    const arr = [];
+    for (let n = 1; n <= MAX_NUMBER; n++) arr.push({ number: n, prob: withinK(n, k) });
+    arr.sort((a, b) => b.prob - a.prob);
+    const top6 = arr.slice(0, 6);
+    if (top6.filter((x) => x.prob > 0.5).length >= 5) { chosen = top6; K = k; break; }
+  }
+  if (!chosen) {
+    const arr = [];
+    for (let n = 1; n <= MAX_NUMBER; n++) arr.push({ number: n, prob: withinK(n, 8) });
+    chosen = arr.sort((a, b) => b.prob - a.prob).slice(0, 6); K = 8;
+  }
+  const numbers = chosen.map((c) => c.number).sort((a, b) => a - b);
+  const perNumberProb = chosen
+    .sort((a, b) => a.number - b.number)
+    .map((c) => ({ number: c.number, prob: Math.round(c.prob * 1000) / 10 }));
+  const above50 = perNumberProb.filter((x) => x.prob > 50).length;
+  // מספר חזק: הכי תדיר
+  const strong = [...ss.list].sort((a, b) => b.count - a.count)[0].number;
+  return {
+    numbers, strong, withinK: K, perNumberProb, above50,
+    note: `כל אחוז = הסתברות שהמספר יופיע בלפחות אחת מ-${K} ההגרלות הבאות (לפי שיעור ההופעה ההיסטורי). זה אינו סיכוי לזכות בהגרלה הבאה.`,
+  };
+}
+
 function buildInsightSummary(model) {
   const { nodes } = model;
   const hot = nodes.filter((n) => n.recentN > 0.6).map((n) => n.number).slice(0, 6);

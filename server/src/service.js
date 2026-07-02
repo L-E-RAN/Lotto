@@ -5,7 +5,8 @@ import {
 import { buildContext, threePredictions, runModel, MODEL_NAMES } from './engine/models.js';
 import { explainNumbers } from './engine/explain.js';
 import { backtestAll } from './engine/backtest.js';
-import { drawNumbers } from './engine/stats.js';
+import { drawNumbers, strongStats } from './engine/stats.js';
+import { generateInsightTickets, confidencePrediction } from './engine/insights.js';
 import { fetchLatestDraws } from './fetcher.js';
 import { DISCLAIMER } from './engine/config.js';
 
@@ -13,26 +14,57 @@ export function buildCtxFromDb() {
   return buildContext(getAllDraws());
 }
 
-// יוצר ושומר 3 תחזיות להגרלה הבאה
+// יוצר ושומר 8 תחזיות להגרלה הבאה (כולל תחזית ביטחון מבוססת-הסתברות)
 export function generateNextPredictions() {
   const draws = getAllDraws();
   if (draws.length < 10) return { predictions: [], message: 'אין מספיק נתונים' };
   const ctx = buildContext(draws);
   const latest = draws[draws.length - 1];
   const targetNumber = latest.draw_number + 1;
+  const ss = strongStats(draws);
 
-  const preds = threePredictions(ctx).map((p) => {
-    const explanation = explainNumbers(p.numbers, ctx);
-    const id = savePrediction({
-      target_draw_number: targetNumber,
-      target_draw_date: null,
-      model_name: p.model_name,
-      numbers: p.numbers,
-      strong_number: p.strong,
-      score: p.score,
-      explanation: JSON.stringify({ label: p.label, perNumber: explanation, pattern: p.pattern }),
+  const specs = [];
+
+  // 6 מודלים סטטיסטיים
+  const modelLabels = [
+    ['weighted_model', 'תחזית ראשית'],
+    ['pair_model', 'תחזית מאוזנת'],
+    ['anti_popularity_model', 'תחזית אגרסיבית'],
+    ['hot_numbers_model', 'תחזית מספרים חמים'],
+    ['cold_numbers_model', 'תחזית מספרים קרים'],
+    ['random_filtered_model', 'תחזית אקראית מסוננת'],
+  ];
+  for (const [model, label] of modelLabels) {
+    const p = runModel(model, ctx);
+    specs.push({
+      model_name: model, label, numbers: p.numbers, strong: p.strong, score: p.score,
+      meta: { label, perNumber: explainNumbers(p.numbers, ctx), pattern: p.pattern },
     });
-    return { id, ...p, target_draw_number: targetNumber, perNumber: explanation, disclaimer: DISCLAIMER };
+  }
+
+  // תחזית תובנות משולבת (מסנתזת את כל הניתוחים)
+  const insight = generateInsightTickets(draws, ctx, 1).tickets[0];
+  specs.push({
+    model_name: 'insight_model', label: 'תחזית תובנות משולבת',
+    numbers: insight.numbers, strong: insight.strong, score: insight.score,
+    meta: { label: 'תחזית תובנות משולבת', perNumber: insight.reasons.map((r) => ({ number: r.number, reasons: r.tags })), pattern: insight.pattern },
+  });
+
+  // תחזית ביטחון — ≥5 מספרים עם הסתברות >50% להופיע תוך K הגרלות
+  const conf = confidencePrediction(draws, ss);
+  specs.push({
+    model_name: 'confidence_model', label: `תחזית ביטחון גבוה (הופעה תוך ${conf.withinK} הגרלות)`,
+    numbers: conf.numbers, strong: conf.strong, score: conf.above50 * 10,
+    meta: { label: `תחזית ביטחון גבוה`, confidence: conf, perNumber: conf.perNumberProb.map((x) => ({ number: x.number, reasons: [`הסתברות ${x.prob}% להופיע תוך ${conf.withinK} הגרלות`] })) },
+  });
+
+  const preds = specs.map((s) => {
+    const id = savePrediction({
+      target_draw_number: targetNumber, target_draw_date: null,
+      model_name: s.model_name, numbers: s.numbers, strong_number: s.strong, score: s.score,
+      explanation: JSON.stringify(s.meta),
+    });
+    return { id, ...s, target_draw_number: targetNumber, perNumber: s.meta.perNumber, disclaimer: DISCLAIMER };
   });
   return { predictions: preds, target_draw_number: targetNumber, disclaimer: DISCLAIMER };
 }

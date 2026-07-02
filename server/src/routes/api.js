@@ -285,6 +285,7 @@ router.get('/predictions/next', wrap((req, res) => {
       score: p.score,
       perNumber: meta.perNumber || [],
       pattern: meta.pattern || null,
+      confidence: meta.confidence || null,
       performance: mp || null,
       backtestAvg: mp?.avg_hits ?? null,
       significant: mp?.significant ?? null,
