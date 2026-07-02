@@ -78,6 +78,10 @@ export function getPredictionsForDraw(drawNumber) {
   return state.predictions.filter((p) => p.target_draw_number === drawNumber).sort((a, b) => b.id - a.id);
 }
 
+export function clearPredictionsForDraw(drawNumber) {
+  state.predictions = state.predictions.filter((p) => p.target_draw_number !== drawNumber);
+}
+
 export function getLatestPredictions() {
   if (!state.predictions.length) return [];
   const maxTarget = Math.max(...state.predictions.map((p) => p.target_draw_number));

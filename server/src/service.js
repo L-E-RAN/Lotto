@@ -1,6 +1,6 @@
 import {
   getAllDraws, getLatestDraw, insertManyDraws, savePrediction,
-  getPredictionsForDraw, savePredictionResult, saveModelPerformance, getModelPerformance,
+  getPredictionsForDraw, clearPredictionsForDraw, savePredictionResult, saveModelPerformance, getModelPerformance,
 } from './store.js';
 import { buildContext, threePredictions, runModel, MODEL_NAMES } from './engine/models.js';
 import { explainNumbers } from './engine/explain.js';
@@ -22,6 +22,7 @@ export function generateNextPredictions() {
   const latest = draws[draws.length - 1];
   const targetNumber = latest.draw_number + 1;
   const ss = strongStats(draws);
+  clearPredictionsForDraw(targetNumber); // מחליף תחזיות קודמות לאותה הגרלה (מונע כפילויות)
 
   const specs = [];
 
